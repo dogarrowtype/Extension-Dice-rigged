@@ -9,7 +9,7 @@ import { isTrueBoolean } from '../../../utils.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'dice';
-const TEMPLATE_PATH = 'third-party/Extension-Dice';
+const TEMPLATE_PATH = 'third-party/Extension-Dice-rigged';
 
 // Define default settings
 const defaultSettings = Object.freeze({
