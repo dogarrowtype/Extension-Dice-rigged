@@ -14,6 +14,7 @@ const TEMPLATE_PATH = 'third-party/Extension-Dice';
 // Define default settings
 const defaultSettings = Object.freeze({
     functionTool: false,
+    riggedD20: null,
 });
 
 // Define a function to get or initialize settings
@@ -57,6 +58,17 @@ async function doDiceRoll(customDiceFormula, quiet = false) {
     const isValid = SillyTavern.libs.droll.validate(value);
 
     if (isValid) {
+        const settings = getSettings();
+        const isPlainD20 = /^\s*1?d20\s*$/i.test(value);
+        const rigged = Number(settings.riggedD20);
+        if (isPlainD20 && Number.isInteger(rigged) && rigged >= 1 && rigged <= 20) {
+            if (!quiet) {
+                const context = SillyTavern.getContext();
+                context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${rigged} (${rigged}) [rigged]`, { isSmallSys: true });
+            }
+            return { total: String(rigged), rolls: [String(rigged)] };
+        }
+
         const result = SillyTavern.libs.droll.roll(value);
         if (!result) {
             return nullValue;
@@ -71,6 +83,43 @@ async function doDiceRoll(customDiceFormula, quiet = false) {
         return nullValue;
     }
 
+}
+
+function updateRigD20Label() {
+    const settings = getSettings();
+    const value = Number(settings.riggedD20);
+    const label = Number.isInteger(value) && value >= 1 && value <= 20 ? ` (${value})` : '';
+    $('#dice_rig_d20_value').text(label);
+}
+
+async function promptRigD20() {
+    const settings = getSettings();
+    const current = settings.riggedD20 ?? '';
+    const input = await callGenericPopup(
+        'Force the next d20 roll to a value from 1-20.<br><i>Leave empty to disable rigging.</i>',
+        POPUP_TYPE.INPUT,
+        String(current),
+        { okButton: 'Set', cancelButton: 'Cancel' },
+    );
+
+    if (input === false || input === null) {
+        return;
+    }
+
+    const trimmed = String(input).trim();
+    if (trimmed === '') {
+        settings.riggedD20 = null;
+    } else {
+        const parsed = Number(trimmed);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 20) {
+            toastr.warning('Rigged d20 value must be an integer from 1 to 20');
+            return;
+        }
+        settings.riggedD20 = parsed;
+    }
+
+    SillyTavern.getContext().saveSettingsDebounced();
+    updateRigD20Label();
 }
 
 async function addDiceRollButton() {
@@ -92,9 +141,15 @@ async function addDiceRollButton() {
     });
 
     $(document.body).append(dropdownHtml);
-    $('#dice_dropdown li').on('click', function () {
+    updateRigD20Label();
+    $('#dice_dropdown li').on('click', async function () {
         dropdown.fadeOut(animation_duration);
-        doDiceRoll($(this).data('value'), false);
+        const value = $(this).data('value');
+        if (value === 'rig') {
+            await promptRigD20();
+            return;
+        }
+        doDiceRoll(value, false);
     });
     const button = $('#roll_dice');
     const dropdown = $('#dice_dropdown');
