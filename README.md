@@ -44,6 +44,17 @@ To supress the chat message, pass a `quiet=true` argument. Then you can use the 
 /roll quiet=true 1d20 | /echo
 ```
 
+### Rigging d20 rolls (debug)
+
+This fork adds a debug control to force the outcome of plain `d20` / `1d20` rolls — useful when developing scripts or characters that branch on a specific roll result.
+
+1. Open **Extensions** settings and expand the **D&D Dice** panel.
+2. In the **Rig d20 result** field, enter an integer from 1 to 20.
+3. Any subsequent plain `d20` roll — from the wand menu, `/roll d20`, or the `RollTheDice` function tool — will return that value. The chat message is suffixed with `[rigged]` so it is obvious the roll was forced.
+4. To resume normal rolling, clear the field (or click the **Clear** button).
+
+Compound formulas such as `2d20`, `d20+5`, or any non-d20 die are not affected and continue to roll normally.
+
 ## License
 
 This extension is licensed under the AGPL-3.0 license.
