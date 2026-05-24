@@ -85,43 +85,6 @@ async function doDiceRoll(customDiceFormula, quiet = false) {
 
 }
 
-function updateRigD20Label() {
-    const settings = getSettings();
-    const value = Number(settings.riggedD20);
-    const label = Number.isInteger(value) && value >= 1 && value <= 20 ? ` (${value})` : '';
-    $('#dice_rig_d20_value').text(label);
-}
-
-async function promptRigD20() {
-    const settings = getSettings();
-    const current = settings.riggedD20 ?? '';
-    const input = await callGenericPopup(
-        'Force the next d20 roll to a value from 1-20.<br><i>Leave empty to disable rigging.</i>',
-        POPUP_TYPE.INPUT,
-        String(current),
-        { okButton: 'Set', cancelButton: 'Cancel' },
-    );
-
-    if (input === false || input === null) {
-        return;
-    }
-
-    const trimmed = String(input).trim();
-    if (trimmed === '') {
-        settings.riggedD20 = null;
-    } else {
-        const parsed = Number(trimmed);
-        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 20) {
-            toastr.warning('Rigged d20 value must be an integer from 1 to 20');
-            return;
-        }
-        settings.riggedD20 = parsed;
-    }
-
-    SillyTavern.getContext().saveSettingsDebounced();
-    updateRigD20Label();
-}
-
 async function addDiceRollButton() {
     const buttonHtml = await renderExtensionTemplateAsync(TEMPLATE_PATH, 'button');
     const dropdownHtml = await renderExtensionTemplateAsync(TEMPLATE_PATH, 'dropdown');
@@ -140,16 +103,33 @@ async function addDiceRollButton() {
         registerFunctionTools();
     });
 
-    $(document.body).append(dropdownHtml);
-    updateRigD20Label();
-    $('#dice_dropdown li').on('click', async function () {
-        dropdown.fadeOut(animation_duration);
-        const value = $(this).data('value');
-        if (value === 'rig') {
-            await promptRigD20();
-            return;
+    const rigInput = $('#dice_rig_d20_input');
+    rigInput.val(settings.riggedD20 ?? '');
+    rigInput.on('change', function () {
+        const raw = String($(this).val()).trim();
+        if (raw === '') {
+            settings.riggedD20 = null;
+        } else {
+            const parsed = Number(raw);
+            if (!Number.isInteger(parsed) || parsed < 1 || parsed > 20) {
+                toastr.warning('Rigged d20 value must be an integer from 1 to 20');
+                $(this).val(settings.riggedD20 ?? '');
+                return;
+            }
+            settings.riggedD20 = parsed;
         }
-        doDiceRoll(value, false);
+        SillyTavern.getContext().saveSettingsDebounced();
+    });
+    $('#dice_rig_d20_clear').on('click', function () {
+        settings.riggedD20 = null;
+        rigInput.val('');
+        SillyTavern.getContext().saveSettingsDebounced();
+    });
+
+    $(document.body).append(dropdownHtml);
+    $('#dice_dropdown li').on('click', function () {
+        dropdown.fadeOut(animation_duration);
+        doDiceRoll($(this).data('value'), false);
     });
     const button = $('#roll_dice');
     const dropdown = $('#dice_dropdown');

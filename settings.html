@@ -14,6 +14,15 @@
                     </a>
                 </label>
             </div>
+            <div class="marginBot5 flex-container flexGap5 alignItemsCenter">
+                <label for="dice_rig_d20_input"><span>Rig d20 result</span></label>
+                <input id="dice_rig_d20_input" type="number" min="1" max="20" step="1" class="text_pole textarea_compact" placeholder="off" style="width: 5em;">
+                <div id="dice_rig_d20_clear" class="menu_button menu_button_icon" title="Disable rigging">
+                    <i class="fa-solid fa-xmark"></i>
+                    <span>Clear</span>
+                </div>
+            </div>
+            <small><i>Leave empty to disable. Forces plain <tt>d20</tt> / <tt>1d20</tt> rolls to the given value for debugging.</i></small>
         </div>
     </div>
 </div>
