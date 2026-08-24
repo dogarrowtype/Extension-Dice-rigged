@@ -55,6 +55,17 @@ This fork adds a debug control to force the outcome of plain `d20` / `1d20` roll
 
 Compound formulas such as `2d20`, `d20+5`, or any non-d20 die are not affected and continue to roll normally.
 
+### Limiting the d20 range (soft fate)
+
+This fork also adds a range limit to keep plain `d20` / `1d20` rolls from going too badly (or too well) — useful as a softer version of fate that still leaves room for luck.
+
+1. Open **Extensions** settings and expand the **D&D Dice** panel.
+2. In the **Limit d20 range** fields, enter a minimum and/or maximum value from 1 to 20 (e.g. **11** and **20**).
+3. Any subsequent plain `d20` roll — from the wand menu, `/roll d20`, or the `RollTheDice` function tool — is clamped into that range. A roll that gets clamped is suffixed with `[clamped to min-max]` in chat so the adjustment is visible.
+4. Either bound can be left empty to clamp only one side (e.g. a minimum of 5 with an empty maximum gives 5–20). To resume fully unrestricted rolling, clear both fields (or click the **Clear** button).
+
+The range limit applies on top of the rigged value, so a rigged result outside the range is clamped as well. Compound formulas such as `2d20`, `d20+5`, or any non-d20 die are not affected and continue to roll normally.
+
 ## License
 
 This extension is licensed under the AGPL-3.0 license.

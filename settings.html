@@ -23,6 +23,17 @@
                 </div>
             </div>
             <small><i>Leave empty to disable. Forces plain <tt>d20</tt> / <tt>1d20</tt> rolls to the given value for debugging.</i></small>
+            <div class="marginBot5 flex-container flexGap5 alignItemsCenter">
+                <label for="dice_range_min_input"><span>Limit d20 range</span></label>
+                <input id="dice_range_min_input" type="number" min="1" max="20" step="1" class="text_pole textarea_compact" placeholder="min" style="width: 5em;">
+                <span>&ndash;</span>
+                <input id="dice_range_max_input" type="number" min="1" max="20" step="1" class="text_pole textarea_compact" placeholder="max" style="width: 5em;">
+                <div id="dice_range_clear" class="menu_button menu_button_icon" title="Disable range limit">
+                    <i class="fa-solid fa-xmark"></i>
+                    <span>Clear</span>
+                </div>
+            </div>
+            <small><i>Leave both empty to disable. Plain <tt>d20</tt> / <tt>1d20</tt> roll results are clamped into this range (e.g. 11–20), softening extreme outcomes.</i></small>
         </div>
     </div>
 </div>

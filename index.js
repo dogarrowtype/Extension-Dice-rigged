@@ -15,6 +15,8 @@ const TEMPLATE_PATH = 'third-party/Extension-Dice-rigged';
 const defaultSettings = Object.freeze({
     functionTool: false,
     riggedD20: null,
+    rangeMin: null,
+    rangeMax: null,
 });
 
 // Define a function to get or initialize settings
@@ -34,6 +36,38 @@ function getSettings() {
     }
 
     return extensionSettings[MODULE_NAME];
+}
+
+/**
+ * Normalize a stored range bound to a valid d20 face value or null.
+ * @param {*} value Stored setting value
+ * @returns {number|null} Integer in 1-20, or null if unset/invalid
+ */
+function normalizeRangeBound(value) {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed >= 1 && parsed <= 20 ? parsed : null;
+}
+
+/**
+ * Clamp a roll total into the configured d20 range, if one is set.
+ * @param {*} settings Extension settings
+ * @param {number} total Roll total
+ * @returns {{total: number, suffix: string}} Clamped total and a chat suffix noting the clamp
+ */
+function clampToRange(settings, total) {
+    const clampMin = normalizeRangeBound(settings.rangeMin);
+    const clampMax = normalizeRangeBound(settings.rangeMax);
+    if (clampMin === null && clampMax === null) {
+        return { total, suffix: '' };
+    }
+    const min = clampMin ?? 1;
+    const max = clampMax ?? 20;
+    const lo = Math.min(min, max);
+    const hi = Math.max(min, max);
+    const clamped = Math.min(hi, Math.max(lo, total));
+    return clamped === total
+        ? { total, suffix: '' }
+        : { total: clamped, suffix: ` [clamped to ${lo}-${hi}]` };
 }
 
 /**
@@ -62,22 +96,24 @@ async function doDiceRoll(customDiceFormula, quiet = false) {
         const isPlainD20 = /^\s*1?d20\s*$/i.test(value);
         const rigged = Number(settings.riggedD20);
         if (isPlainD20 && Number.isInteger(rigged) && rigged >= 1 && rigged <= 20) {
+            const clamped = clampToRange(settings, rigged);
             if (!quiet) {
                 const context = SillyTavern.getContext();
-                context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${rigged} (${rigged}) [rigged]`, { isSmallSys: true });
+                context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${clamped.total} (${clamped.total}) [rigged]${clamped.suffix}`, { isSmallSys: true });
             }
-            return { total: String(rigged), rolls: [String(rigged)] };
+            return { total: String(clamped.total), rolls: [String(clamped.total)] };
         }
 
         const result = SillyTavern.libs.droll.roll(value);
         if (!result) {
             return nullValue;
         }
+        const { total, suffix } = isPlainD20 ? clampToRange(settings, result.total) : { total: result.total, suffix: '' };
         if (!quiet) {
             const context = SillyTavern.getContext();
-            context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${result.total} (${result.rolls.join(', ')})`, { isSmallSys: true });
+            context.sendSystemMessage('generic', `${context.name1} rolls a ${value}. The result is: ${total} (${result.rolls.join(', ')})${suffix}`, { isSmallSys: true });
         }
-        return { total: String(result.total), rolls: result.rolls.map(String) };
+        return { total: String(total), rolls: result.rolls.map(String) };
     } else {
         toastr.warning('Invalid dice formula');
         return nullValue;
@@ -123,6 +159,35 @@ async function addDiceRollButton() {
     $('#dice_rig_d20_clear').on('click', function () {
         settings.riggedD20 = null;
         rigInput.val('');
+        SillyTavern.getContext().saveSettingsDebounced();
+    });
+
+    const rangeMinInput = $('#dice_range_min_input');
+    const rangeMaxInput = $('#dice_range_max_input');
+    rangeMinInput.val(settings.rangeMin ?? '');
+    rangeMaxInput.val(settings.rangeMax ?? '');
+    const onRangeChange = function (key, input) {
+        const raw = String($(input).val()).trim();
+        if (raw === '') {
+            settings[key] = null;
+        } else {
+            const parsed = Number(raw);
+            if (!Number.isInteger(parsed) || parsed < 1 || parsed > 20) {
+                toastr.warning('Range values must be integers from 1 to 20');
+                $(input).val(settings[key] ?? '');
+                return;
+            }
+            settings[key] = parsed;
+        }
+        SillyTavern.getContext().saveSettingsDebounced();
+    };
+    rangeMinInput.on('change', function () { onRangeChange('rangeMin', this); });
+    rangeMaxInput.on('change', function () { onRangeChange('rangeMax', this); });
+    $('#dice_range_clear').on('click', function () {
+        settings.rangeMin = null;
+        settings.rangeMax = null;
+        rangeMinInput.val('');
+        rangeMaxInput.val('');
         SillyTavern.getContext().saveSettingsDebounced();
     });
 
